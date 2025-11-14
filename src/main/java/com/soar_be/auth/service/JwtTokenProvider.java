@@ -1,6 +1,10 @@
 package com.soar_be.auth.service;
 
+import com.soar_be.global.exception.CustomException;
+import com.soar_be.global.exception.ErrorCode;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -38,6 +42,23 @@ public class JwtTokenProvider {
                 .setExpiration(expirationDate)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token);
+
+            return true;
+        } catch (SecurityException | MalformedJwtException exception) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        } catch (ExpiredJwtException exception) {
+            throw new CustomException(ErrorCode.TOKEN_EXPIRED);
+        } catch (Exception exception) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
     }
 
 }
