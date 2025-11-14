@@ -94,4 +94,34 @@ public class JwtTokenProviderTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.TOKEN_EXPIRED);
     }
+
+    @Test
+    void 토큰정보_추출테스트_userID() {
+        // given
+        String email = "test@example.com";
+        Long userId = 99L;
+
+        String token = jwtTokenProvider.generateToken(email, userId);
+
+        // when
+        Long extractedId = jwtTokenProvider.getUserIdFromToken(token);
+
+        // then
+        assertEquals(userId, extractedId);
+    }
+
+    @Test
+    void 토큰정보_추출테스트_email() {
+        // given
+        String email = "test@example.com";
+        Long userId = 99L;
+
+        String token = jwtTokenProvider.generateToken(email, userId);
+
+        // when
+        String extractedEmail = jwtTokenProvider.getEmailFromToken(token);
+
+        // then
+        assertEquals(email, extractedEmail);
+    }
 }

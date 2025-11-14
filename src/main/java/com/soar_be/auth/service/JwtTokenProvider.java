@@ -2,6 +2,7 @@ package com.soar_be.auth.service;
 
 import com.soar_be.global.exception.CustomException;
 import com.soar_be.global.exception.ErrorCode;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
@@ -60,5 +61,23 @@ public class JwtTokenProvider {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
     }
+
+    public Long getUserIdFromToken(String token) {
+        Claims claims = getClaims(token);
+        return claims.get("userId", Long.class);
+    }
+
+    public String getEmailFromToken(String token) {
+        return getClaims(token).getSubject();
+    }
+
+    private Claims getClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
 
 }
