@@ -2,6 +2,7 @@ package com.soar_be.auth.controller;
 
 import com.soar_be.auth.api.AuthAPI;
 import com.soar_be.auth.dto.LoginRequest;
+import com.soar_be.auth.dto.RefreshRequest;
 import com.soar_be.auth.dto.SignupRequest;
 import com.soar_be.auth.dto.TokenResponse;
 import com.soar_be.auth.service.AuthService;
@@ -30,6 +31,13 @@ public class AuthController implements AuthAPI {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<TokenResponse>> login(LoginRequest loginRequest) {
         ApiResponse<TokenResponse> response = authService.login(loginRequest);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<TokenResponse>> refresh(RefreshRequest refreshRequest) {
+        ApiResponse<TokenResponse> response = authService.refresh(refreshRequest);
         return ResponseEntity.ok(response);
     }
 }

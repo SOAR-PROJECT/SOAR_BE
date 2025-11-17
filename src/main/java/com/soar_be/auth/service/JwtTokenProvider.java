@@ -45,50 +45,11 @@ public class JwtTokenProvider {
     }
 
     public TokenResponse generateTokenResponse(String email, Long userId, Role role) {
-        Date now = new Date();
         String accessToken = generateAccessToken(email, userId, role);
-        String refreshToken = generateRefreshToken(email);
+        String refreshToken = generateRefreshToken(email, userId, role);
 
         long expiresIn = ACCESS_TOKEN_EXPIRATION;
-
         return TokenResponse.create(accessToken, refreshToken, expiresIn);
-    }
-
-    public String generateAccessToken(String email, Long userId, Role role) {
-        return generateToken(
-                email,
-                ACCESS_TOKEN_EXPIRATION,
-                role,
-                userId
-        );
-    }
-
-    public String generateRefreshToken(String email) {
-        return generateToken(email, REFRESH_TOKEN_EXPIRATION);
-    }
-
-    private String generateToken(String email, long expiration) {
-        return generateToken(email, expiration, null, null);
-    }
-
-    private String generateToken(String email, long expiration, Role role, Long userId) {
-        Date now = new Date();
-        Date expirationDate = new Date(now.getTime() + expiration);
-
-        var builder = Jwts.builder()
-                .setSubject(email)
-                .setIssuedAt(now)
-                .setExpiration(expirationDate)
-                .signWith(key, SignatureAlgorithm.HS256);
-
-        if (role != null) {
-            builder.claim("role", role.name());
-        }
-        if (userId != null) {
-            builder.claim("userId", userId);
-        }
-
-        return builder.compact();
     }
 
     public boolean validateToken(String token) {
@@ -147,6 +108,38 @@ public class JwtTokenProvider {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    private String generateAccessToken(String email, Long userId, Role role) {
+        return generateToken(
+                email,
+                ACCESS_TOKEN_EXPIRATION,
+                role,
+                userId
+        );
+    }
+
+    private String generateRefreshToken(String email, Long userId, Role role) {
+        return generateToken(
+                email,
+                REFRESH_TOKEN_EXPIRATION,
+                role,
+                userId);
+    }
+
+    private String generateToken(String email, long expiration, Role role, Long userId) {
+        Date now = new Date();
+        Date expirationDate = new Date(now.getTime() + expiration);
+
+        var builder = Jwts.builder()
+                .setSubject(email)
+                .claim("userId", userId)
+                .claim("role", role)
+                .setIssuedAt(now)
+                .setExpiration(expirationDate)
+                .signWith(key, SignatureAlgorithm.HS256);
+
+        return builder.compact();
     }
 
 

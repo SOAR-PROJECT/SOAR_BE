@@ -2,6 +2,7 @@ package com.soar_be.auth.service;
 
 import com.soar_be.auth.details.CustomUserDetails;
 import com.soar_be.auth.dto.LoginRequest;
+import com.soar_be.auth.dto.RefreshRequest;
 import com.soar_be.auth.dto.SignupRequest;
 import com.soar_be.auth.dto.TokenResponse;
 import com.soar_be.domain.user.entity.Role;
@@ -28,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
     private static final String SIGN_UP_SUCCESS = "회원가입이 완료되었습니다.";
     private static final String LOGIN_SUCCESS = "로그인이 완료되었습니다.";
+    private static final String REFRESH_SUCCESS = "토큰 재발급이 완료되었습니다.";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -65,6 +68,24 @@ public class AuthService {
         }
     }
 
+    @Transactional
+    public ApiResponse<TokenResponse> refresh(RefreshRequest request) {
+        String refreshToken = request.getRefreshToken();
+
+        validateRefreshToken(refreshToken);
+
+        TokenResponse tokenResponse = jwtTokenProvider.generateTokenResponse(
+                jwtTokenProvider.getEmailFromToken(refreshToken),
+                jwtTokenProvider.getUserIdFromToken(refreshToken), jwtTokenProvider.getRoleFromToken(refreshToken));
+
+        return ApiResponse.success(REFRESH_SUCCESS, tokenResponse);
+    }
+
+    private void validateRefreshToken(String refreshToken) {
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+    }
 
     private CustomUserDetails validateLoginInfo(String email, String password) {
         Authentication authentication = authenticationManager.authenticate(
