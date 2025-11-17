@@ -1,6 +1,7 @@
 package com.soar_be.auth.service;
 
 import com.soar_be.auth.details.CustomUserDetails;
+import com.soar_be.auth.dto.TokenResponse;
 import com.soar_be.domain.user.entity.Role;
 import com.soar_be.global.exception.CustomException;
 import com.soar_be.global.exception.ErrorCode;
@@ -39,6 +40,25 @@ public class JwtTokenProvider {
     public void init() {
         this.key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
     }
+
+    public TokenResponse generateTokenResponse(String email, Long userId, Role role) {
+        Date now = new Date();
+        Date expirationDate = new Date(now.getTime() + EXPIRATION);
+
+        String token = Jwts.builder()
+                .setSubject(email)
+                .claim("userId", userId)
+                .claim("role", role.name())
+                .setIssuedAt(now)
+                .setExpiration(expirationDate)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+
+        long expiresIn = expirationDate.getTime() - now.getTime();
+
+        return TokenResponse.create(token, expiresIn);
+    }
+
 
     public String generateToken(String email, Long userId, Role role) {
         Date now = new Date();
