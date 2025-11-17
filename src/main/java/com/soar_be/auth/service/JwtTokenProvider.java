@@ -31,8 +31,11 @@ public class JwtTokenProvider {
     @Value("${jwt.secret}")
     private String SECRET_KEY;
 
-    @Value("${jwt.expiration}")
-    private long EXPIRATION;
+    @Value("${jwt.access-token-expiration}")
+    private long ACCESS_TOKEN_EXPIRATION;
+
+    @Value("${jwt.refresh-token-expiration}")
+    private long REFRESH_TOKEN_EXPIRATION;
 
     private Key key;
 
@@ -43,26 +46,34 @@ public class JwtTokenProvider {
 
     public TokenResponse generateTokenResponse(String email, Long userId, Role role) {
         Date now = new Date();
-        Date expirationDate = new Date(now.getTime() + EXPIRATION);
+        Date accessExpirationDate = new Date(now.getTime() + ACCESS_TOKEN_EXPIRATION);
+        Date refreshExpirationDate = new Date(now.getTime() + REFRESH_TOKEN_EXPIRATION);
 
-        String token = Jwts.builder()
+        String accessToken = Jwts.builder()
                 .setSubject(email)
                 .claim("userId", userId)
                 .claim("role", role.name())
                 .setIssuedAt(now)
-                .setExpiration(expirationDate)
+                .setExpiration(accessExpirationDate)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
 
-        long expiresIn = expirationDate.getTime() - now.getTime();
+        String refreshToken = Jwts.builder()
+                .setSubject(email)
+                .setIssuedAt(now)
+                .setExpiration(refreshExpirationDate)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
 
-        return TokenResponse.create(token, expiresIn);
+        long expiresIn = accessExpirationDate.getTime() - now.getTime();
+
+        return TokenResponse.create(accessToken, refreshToken, expiresIn);
     }
 
 
     public String generateToken(String email, Long userId, Role role) {
         Date now = new Date();
-        Date expirationDate = new Date(now.getTime() + EXPIRATION);
+        Date expirationDate = new Date(now.getTime() + ACCESS_TOKEN_EXPIRATION);
 
         return Jwts.builder()
                 .setSubject(email)
