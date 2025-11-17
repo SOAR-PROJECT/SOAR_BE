@@ -1,5 +1,7 @@
 package com.soar_be.auth.service;
 
+import com.soar_be.auth.details.CustomUserDetails;
+import com.soar_be.auth.dto.LoginRequest;
 import com.soar_be.auth.dto.SignupRequest;
 import com.soar_be.auth.dto.TokenResponse;
 import com.soar_be.domain.user.entity.Role;
@@ -10,6 +12,11 @@ import com.soar_be.global.exception.CustomException;
 import com.soar_be.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,9 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthService {
     private static final String SIGN_UP_SUCCESS = "회원가입이 완료되었습니다.";
+    private static final String LOGIN_SUCCESS = "로그인이 완료되었습니다.";
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final AuthenticationManager authenticationManager;
 
     @Transactional
     public ApiResponse<TokenResponse> signup(SignupRequest request) {
@@ -42,6 +51,33 @@ public class AuthService {
         );
 
         return ApiResponse.success(SIGN_UP_SUCCESS, tokenResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public ApiResponse<TokenResponse> login(LoginRequest request) {
+        try {
+            CustomUserDetails userDetails = validateLoginInfo(request.getEmail(), request.getPassword());
+            TokenResponse tokenResponse = jwtTokenProvider.generateTokenResponse(request.getEmail(),
+                    userDetails.getUserId(), getRole(userDetails));
+            return ApiResponse.success(LOGIN_SUCCESS, tokenResponse);
+        } catch (BadCredentialsException e) {
+            throw new CustomException(ErrorCode.LOGIN_FAILED);
+        }
+    }
+
+
+    private CustomUserDetails validateLoginInfo(String email, String password) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(email, password)
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        return (CustomUserDetails) authentication.getPrincipal();
+    }
+
+    private Role getRole(CustomUserDetails userDetails) {
+        return Role.valueOf(userDetails.getAuthorities().iterator().next().getAuthority().substring(5));
     }
 
 

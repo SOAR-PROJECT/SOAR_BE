@@ -115,7 +115,7 @@ public class JwtTokenProvider {
         Collection<? extends GrantedAuthority> authorities =
                 Collections.singleton(new SimpleGrantedAuthority("ROLE_" + role.name()));
 
-        UserDetails userDetails = new CustomUserDetails(userId, email, authorities);
+        UserDetails userDetails = new CustomUserDetails(userId, email, "", authorities);
 
         return new UsernamePasswordAuthenticationToken(
                 userDetails,

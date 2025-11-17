@@ -8,11 +8,14 @@ public class CustomUserDetails implements UserDetails {
 
     private final Long userId;
     private final String email;
+    private final String passwordHash;
     private final Collection<? extends GrantedAuthority> authorities;
 
-    public CustomUserDetails(Long userId, String email, Collection<? extends GrantedAuthority> authorities) {
+    public CustomUserDetails(Long userId, String email, String passwordHash,
+                             Collection<? extends GrantedAuthority> authorities) {
         this.userId = userId;
         this.email = email;
+        this.passwordHash = passwordHash;
         this.authorities = authorities;
     }
 
@@ -32,7 +35,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getPassword() {
-        return null;
+        return passwordHash;
     }
 
     @Override
