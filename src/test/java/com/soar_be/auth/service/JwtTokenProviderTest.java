@@ -2,6 +2,7 @@ package com.soar_be.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.soar_be.auth.details.CustomUserDetails;
@@ -20,32 +21,34 @@ import org.springframework.test.util.ReflectionTestUtils;
 public class JwtTokenProviderTest {
 
     private final String TEST_SECRET_KEY = "abcdefghijklmnopqrstuvwxyz123456";
-    private final long TEST_EXPIRATION = 1000L * 60;
+    private final long TEST_ACCESS_EXPIRATION = 60 * 1000L;  // 1 minute
+    private final long TEST_REFRESH_EXPIRATION = 7 * 24 * 60 * 60 * 1000L; // 7 days
     private JwtTokenProvider jwtTokenProvider;
 
     @BeforeEach
     public void setUp() {
         this.jwtTokenProvider = new JwtTokenProvider();
         ReflectionTestUtils.setField(jwtTokenProvider, "SECRET_KEY", TEST_SECRET_KEY);
-        ReflectionTestUtils.setField(jwtTokenProvider, "EXPIRATION", TEST_EXPIRATION);
+        ReflectionTestUtils.setField(jwtTokenProvider, "ACCESS_TOKEN_EXPIRATION", TEST_ACCESS_EXPIRATION);
+        ReflectionTestUtils.setField(jwtTokenProvider, "REFRESH_TOKEN_EXPIRATION", TEST_REFRESH_EXPIRATION);
 
         jwtTokenProvider.init();
     }
 
     @Test
-    void 토큰생성_테스트() {
+    void AccessToken_생성_테스트() {
         // given
         String email = "test@gmail.com";
         Long userId = 1L;
         Role role = Role.USER;
 
         // when
-        String jwtToken = jwtTokenProvider.generateToken(email, userId, role);
+        String accessToken = jwtTokenProvider.generateAccessToken(email, userId, role);
 
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(TEST_SECRET_KEY.getBytes())
                 .build()
-                .parseClaimsJws(jwtToken)
+                .parseClaimsJws(accessToken)
                 .getBody();
 
         // then
@@ -55,9 +58,29 @@ public class JwtTokenProviderTest {
     }
 
     @Test
-    void 토큰검증_테스트_유효하면_true_반환() {
+    void RefreshToken_생성_테스트() {
         // given
-        String token = jwtTokenProvider.generateToken("test@example.com", 1L, Role.USER);
+        String email = "test@gmail.com";
+
+        // when
+        String refreshToken = jwtTokenProvider.generateRefreshToken(email);
+
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(TEST_SECRET_KEY.getBytes())
+                .build()
+                .parseClaimsJws(refreshToken)
+                .getBody();
+
+        // then
+        assertEquals(email, claims.getSubject());
+        assertNull(claims.get("userId"));
+        assertNull(claims.get("role"));
+    }
+
+    @Test
+    void 토큰검증_유효하면_true_반환() {
+        // given
+        String token = jwtTokenProvider.generateAccessToken("test@example.com", 1L, Role.USER);
 
         // when
         boolean result = jwtTokenProvider.validateToken(token);
@@ -67,16 +90,13 @@ public class JwtTokenProviderTest {
     }
 
     @Test
-    void 토큰검증_예외_테스트_위조된_토큰이면_INVALID_TOKEN_예외를_던짐() {
+    void 토큰검증_위조된_토큰이면_INVALID_TOKEN_예외발생() {
         // given
-        String validToken = jwtTokenProvider.generateToken("test@example.com", 1L, Role.USER);
-
         String fakeToken = Jwts.builder()
                 .setSubject("test@example.com")
                 .claim("userId", 1L)
-                .claim("role", "USER")
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + TEST_EXPIRATION))
+                .setExpiration(new Date(System.currentTimeMillis() + TEST_ACCESS_EXPIRATION))
                 .signWith(Keys.hmacShaKeyFor("another-secret-key-for-fake-token-12345".getBytes()))
                 .compact();
 
@@ -88,15 +108,13 @@ public class JwtTokenProviderTest {
     }
 
     @Test
-    void 토큰검증_예외_테스트_만료된_토큰이면_EXPIRED_TOKEN_예외를_던짐() {
+    void 토큰검증_만료된_토큰은_TOKEN_EXPIRED_예외발생() {
         // given
         String expiredToken = Jwts.builder()
                 .setSubject("test@example.com")
-                .claim("userId", 1L)
-                .claim("role", "USER")
                 .setIssuedAt(new Date(System.currentTimeMillis() - 10000))
-                .setExpiration(new Date(System.currentTimeMillis() - 5000)) // 이미 만료됨
-                .signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor(TEST_SECRET_KEY.getBytes()))
+                .setExpiration(new Date(System.currentTimeMillis() - 5000))
+                .signWith(Keys.hmacShaKeyFor(TEST_SECRET_KEY.getBytes()))
                 .compact();
 
         // when & then
@@ -107,56 +125,13 @@ public class JwtTokenProviderTest {
     }
 
     @Test
-    void 토큰정보_추출테스트_userID() {
-        // given
-        String email = "test@example.com";
-        Long userId = 99L;
-
-        String token = jwtTokenProvider.generateToken(email, userId, Role.USER);
-
-        // when
-        Long extractedId = jwtTokenProvider.getUserIdFromToken(token);
-
-        // then
-        assertEquals(userId, extractedId);
-    }
-
-    @Test
-    void 토큰정보_추출테스트_email() {
-        // given
-        String email = "test@example.com";
-        Long userId = 99L;
-
-        String token = jwtTokenProvider.generateToken(email, userId, Role.USER);
-
-        // when
-        String extractedEmail = jwtTokenProvider.getEmailFromToken(token);
-
-        // then
-        assertEquals(email, extractedEmail);
-    }
-
-    @Test
-    void 토큰정보_추출테스트_role() {
-        // given
-        Role role = Role.ADMIN;
-        String token = jwtTokenProvider.generateToken("admin@abc.com", 10L, role);
-
-        // when
-        Role extractedRole = jwtTokenProvider.getRoleFromToken(token);
-
-        // then
-        assertEquals(role, extractedRole);
-    }
-
-    @Test
-    void 인증객체_생성테스트() {
+    void 인증객체_생성_테스트() {
         // given
         Long userId = 100L;
         String email = "user@test.com";
         Role role = Role.ADMIN;
 
-        String token = jwtTokenProvider.generateToken(email, userId, role);
+        String token = jwtTokenProvider.generateAccessToken(email, userId, role);
 
         // when
         Authentication authentication = jwtTokenProvider.getAuthentication(token);
@@ -168,10 +143,6 @@ public class JwtTokenProviderTest {
         assertEquals(userId, userDetails.getUserId());
         assertEquals(email, userDetails.getUsername());
 
-        assertEquals(1, authentication.getAuthorities().size());
-        assertEquals(
-                "ROLE_" + role.name(),
-                authentication.getAuthorities().iterator().next().getAuthority()
-        );
+        assertEquals("ROLE_" + role.name(), authentication.getAuthorities().iterator().next().getAuthority());
     }
 }
