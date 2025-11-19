@@ -18,7 +18,11 @@ public enum ErrorCode {
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 이메일입니다."),
 
     LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 잘못되었습니다."),
-    ;
+
+    STORE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 등록된 스토어가 있습니다."),
+    STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "스토어를 찾을 수 없습니다."),
+    STORE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "스토어 소유자가 아닙니다.");
+
     private final HttpStatus httpStatus;
     private final String message;
 
