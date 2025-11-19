@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 public interface StoreRepository extends JpaRepository<Store, Integer> {
     List<Store> findAllByUserId(Long userId);
 
-    Optional<Store> findByIdAndUserId(Long id, Long userId);
+    Optional<Store> findById(Long id);
 
     boolean existsByUserIdAndName(Long userId, String name);
 

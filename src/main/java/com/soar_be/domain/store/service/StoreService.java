@@ -9,6 +9,7 @@ import com.soar_be.domain.user.repository.UserRepository;
 import com.soar_be.global.dto.ApiResponse;
 import com.soar_be.global.exception.CustomException;
 import com.soar_be.global.exception.ErrorCode;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,8 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class StoreService {
-
     private static final String STORE_CREATED_SUCCESS = "스토어가 등록되었습니다.";
+    private static final String STORE_LIST_SUCCESS = "스토어 목록 조회가 완료되었습니다.";
+    private static final String STORE_DETAIL_SUCCESS = "스토어 조회가 완료되었습니다.";
+
 
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
@@ -42,6 +45,39 @@ public class StoreService {
 
         StoreResponse response = StoreResponse.from(store);
         return ApiResponse.success(STORE_CREATED_SUCCESS, response);
+    }
+
+    @Transactional(readOnly = true)
+    public ApiResponse<List<StoreResponse>> getMyStores(Long userId) {
+        List<Store> stores = storeRepository.findAllByUserId(userId);
+
+        List<StoreResponse> storeResponses = stores.stream()
+                .map(StoreResponse::from)
+                .toList();
+
+        log.info("Fetched {} stores for userId: {}", storeResponses.size(), userId);
+        return ApiResponse.success(STORE_LIST_SUCCESS, storeResponses);
+    }
+
+    @Transactional(readOnly = true)
+    public ApiResponse<StoreResponse> getStoreById(Long storeId, Long userId) {
+        Store store = findStoreByIdAndValidateOwner(storeId, userId);
+
+        log.info("Fetched store - storeId: {}, userId: {}", storeId, userId);
+
+        StoreResponse response = StoreResponse.from(store);
+        return ApiResponse.success(STORE_DETAIL_SUCCESS, response);
+    }
+
+    private Store findStoreByIdAndValidateOwner(Long storeId, Long userId) {
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+
+        if (!store.getUser().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.STORE_ACCESS_DENIED);
+        }
+
+        return store;
     }
 
     private void validateDuplicateStoreName(String name) {
