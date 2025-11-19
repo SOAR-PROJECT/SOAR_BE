@@ -22,7 +22,8 @@ public class StoreService {
     private static final String STORE_CREATED_SUCCESS = "스토어가 등록되었습니다.";
     private static final String STORE_LIST_SUCCESS = "스토어 목록 조회가 완료되었습니다.";
     private static final String STORE_DETAIL_SUCCESS = "스토어 조회가 완료되었습니다.";
-
+    private static final String STORE_UPDATED_SUCCESS = "스토어 정보가 수정되었습니다.";
+    private static final String STORE_DELETED_SUCCESS = "스토어가 삭제되었습니다.";
 
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
@@ -67,6 +68,34 @@ public class StoreService {
 
         StoreResponse response = StoreResponse.from(store);
         return ApiResponse.success(STORE_DETAIL_SUCCESS, response);
+    }
+
+    @Transactional
+    public ApiResponse<StoreResponse> updateStore(Long storeId, Long userId, StoreRequest request) {
+        Store store = findStoreByIdAndValidateOwner(storeId, userId);
+
+        if (!store.getName().equals(request.getName())) {
+            validateDuplicateStoreName(request.getName());
+        }
+
+        store.updateName(request.getName());
+
+        log.info("Store updated - storeId: {}, userId: {}, newName: {}",
+                storeId, userId, store.getName());
+
+        StoreResponse response = StoreResponse.from(store);
+        return ApiResponse.success(STORE_UPDATED_SUCCESS, response);
+    }
+
+    @Transactional
+    public ApiResponse<Void> deleteStore(Long storeId, Long userId) {
+        Store store = findStoreByIdAndValidateOwner(storeId, userId);
+
+        storeRepository.delete(store);
+
+        log.info("Store deleted - storeId: {}, userId: {}", storeId, userId);
+
+        return ApiResponse.success(STORE_DELETED_SUCCESS, null);
     }
 
     private Store findStoreByIdAndValidateOwner(Long storeId, Long userId) {

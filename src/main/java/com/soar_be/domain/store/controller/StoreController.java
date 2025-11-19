@@ -11,7 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,6 +57,27 @@ public class StoreController implements StoreAPI {
         log.debug("Store request - userId: {}, storeId: {}", userDetails.getUserId(), storeId);
 
         ApiResponse<StoreResponse> response = storeService.getStoreById(storeId, userDetails.getUserId());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @PatchMapping("/{storeId}")
+    public ResponseEntity<ApiResponse<StoreResponse>> updateStore(Long storeId, CustomUserDetails userDetails,
+                                                                  StoreRequest storeRequest) {
+        log.debug("Store update request - userId: {}, storeId: {}", userDetails.getUserId(), storeId);
+
+        ApiResponse<StoreResponse> response = storeService.updateStore(storeId, userDetails.getUserId(), storeRequest);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @DeleteMapping("/{storeId}")
+    public ResponseEntity<ApiResponse<Void>> deleteStore(Long storeId, CustomUserDetails userDetails) {
+        log.debug("Store delete request - userId: {}, storeId: {}", userDetails.getUserId(), storeId);
+
+        ApiResponse<Void> response = storeService.deleteStore(storeId, userDetails.getUserId());
 
         return ResponseEntity.ok(response);
     }

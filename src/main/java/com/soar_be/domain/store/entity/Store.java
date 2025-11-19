@@ -61,4 +61,8 @@ public class Store {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    public void updateName(String name) {
+        this.name = name;
+    }
 }

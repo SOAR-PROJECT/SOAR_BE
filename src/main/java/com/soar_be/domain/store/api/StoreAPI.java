@@ -20,4 +20,11 @@ public interface StoreAPI {
 
     ResponseEntity<ApiResponse<StoreResponse>> getStoresById(@PathVariable Long storeId,
                                                              @AuthenticationPrincipal CustomUserDetails userDetails);
+
+    ResponseEntity<ApiResponse<StoreResponse>> updateStore(@PathVariable Long storeId,
+                                                           @AuthenticationPrincipal CustomUserDetails userDetails,
+                                                           @Valid @RequestBody StoreRequest storeRequest);
+
+    ResponseEntity<ApiResponse<Void>> deleteStore(@PathVariable Long storeId,
+                                                  @AuthenticationPrincipal CustomUserDetails userDetails);
 }
