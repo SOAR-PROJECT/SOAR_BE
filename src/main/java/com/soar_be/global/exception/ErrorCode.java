@@ -23,7 +23,16 @@ public enum ErrorCode {
     STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "스토어를 찾을 수 없습니다."),
     STORE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "스토어 소유자가 아닙니다."),
 
-    NOT_FOUND_USER(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다.");
+    NOT_FOUND_USER(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
+
+    PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."),
+    PRODUCT_MANAGEMENT_CODE_DUPLICATE(HttpStatus.CONFLICT, "중복된 관리번호입니다."),
+    PRODUCT_INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "엑셀 파일 형식이 올바르지 않습니다."),
+    PRODUCT_REQUIRED_FIELD_MISSING(HttpStatus.BAD_REQUEST, "필수 항목이 누락되었습니다."),
+    PRODUCT_INVALID_STATUS(HttpStatus.BAD_REQUEST, "유효하지 않은 상품 상태입니다."),
+    PRODUCT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "상품 접근 권한이 없습니다."),
+
+    ;
 
     private final HttpStatus httpStatus;
     private final String message;

@@ -55,9 +55,6 @@ public class Product {
     @Column(name = "primary_keyword", nullable = false, length = 200)
     private String primaryKeyword;
 
-    @Column(name = "product_url", length = 1000)
-    private String productUrl;
-
     @Column(nullable = false, length = 50)
     private String marketplace = "스마트스토어";
 
