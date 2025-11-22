@@ -37,6 +37,16 @@ public class ProductService {
         int rowNum = 2;
 
         for (Product product : parsedProducts) {
+            if (product.getRegisteredName().startsWith("PARSING_FAILED:")) {
+                failedRows.add(ExcelUploadFailedRow.builder()
+                        .row(rowNum)
+                        .managementCode(product.getManagementCode())
+                        .reason(product.getRegisteredName().replace("PARSING_FAILED:", ""))
+                        .build());
+                rowNum++;
+                continue;
+            }
+
             try {
                 validateManagementCodeDuplicate(storeId, product.getManagementCode(), rowNum);
 

@@ -53,6 +53,24 @@ public class ExcelParsingService {
                     products.add(product);
                 } catch (Exception e) {
                     log.warn("Row {} parsing failed: {}", i + 1, e.getMessage());
+
+                    String managementCode = "";
+                    try {
+                        managementCode = getCellValue(row, ExcelColumn.MANAGEMENT_CODE.getIndex());
+                    } catch (Exception ignored) {
+                    }
+
+                    Product failedProduct = Product.builder()
+                            .store(store)
+                            .managementCode(managementCode)
+                            .registeredName("PARSING_FAILED:" + e.getMessage())
+                            .actualProductName("")
+                            .primaryKeyword("")
+                            .marketplace("")
+                            .status(ProductStatus.DELETED)
+                            .build();
+
+                    products.add(failedProduct);
                 }
             }
 
