@@ -2,7 +2,10 @@ package com.soar_be.domain.product.service;
 
 import com.soar_be.domain.product.dto.ExcelUploadFailedRow;
 import com.soar_be.domain.product.dto.ExcelUploadResponse;
+import com.soar_be.domain.product.dto.ProductRequest;
+import com.soar_be.domain.product.dto.ProductResponse;
 import com.soar_be.domain.product.entity.Product;
+import com.soar_be.domain.product.entity.ProductStatus;
 import com.soar_be.domain.product.repository.ProductRepository;
 import com.soar_be.domain.store.entity.Store;
 import com.soar_be.domain.store.repository.StoreRepository;
@@ -85,6 +88,35 @@ public class ProductService {
                 .build();
 
         return ApiResponse.success(response.getSuccessMessage(), response);
+    }
+
+    @Transactional
+    public ApiResponse<ProductResponse> createProduct(Long userId, ProductRequest request) {
+        Store store = findStoreByIdAndValidateOwner(request.getStoreId(), userId);
+
+        if (productRepository.existsByStoreIdAndManagementCode(request.getStoreId(), request.getManagementCode())) {
+            throw new CustomException(ErrorCode.PRODUCT_MANAGEMENT_CODE_DUPLICATE);
+        }
+
+        Product product = Product.builder()
+                .store(store)
+                .managementCode(request.getManagementCode())
+                .registeredName(request.getRegisteredName())
+                .actualProductName(request.getActualProductName())
+                .primaryKeyword(request.getPrimaryKeyword())
+                .marketplace(request.getMarketplace())
+                .registeredDate(request.getRegisteredDate())
+                .status(ProductStatus.ACTIVE)
+                .build();
+
+        Product savedProduct = productRepository.save(product);
+
+        log.info("Product created - productId: {}, storeId: {}, managementCode: {}",
+                savedProduct.getId(), request.getStoreId(), request.getManagementCode());
+
+        ProductResponse response = ProductResponse.from(savedProduct);
+
+        return ApiResponse.success("상품이 등록되었습니다.", response);
     }
 
     private Store findStoreByIdAndValidateOwner(Long storeId, Long userId) {
