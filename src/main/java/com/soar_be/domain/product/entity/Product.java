@@ -91,4 +91,27 @@ public class Product {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    public void update(String registeredName, String actualProductName,
+                       String primaryKeyword, String marketplace, LocalDate registeredDate) {
+        if (registeredName != null) {
+            this.registeredName = registeredName;
+        }
+        if (actualProductName != null) {
+            this.actualProductName = actualProductName;
+        }
+        if (primaryKeyword != null) {
+            this.primaryKeyword = primaryKeyword;
+        }
+        if (marketplace != null) {
+            this.marketplace = marketplace;
+        }
+        if (registeredDate != null) {
+            this.registeredDate = registeredDate;
+        }
+    }
+
+    public void updateStatus(ProductStatus status) {
+        this.status = status;
+    }
 }
