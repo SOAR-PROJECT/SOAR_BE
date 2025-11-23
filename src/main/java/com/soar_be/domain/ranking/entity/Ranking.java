@@ -31,9 +31,6 @@ public class Ranking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 200)
-    private String keyword;
-
     @Column(name = "rank_overall")
     private Integer rankOverall;
 
@@ -60,5 +57,9 @@ public class Ranking {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+    }
+
+    public String getKeyword() {
+        return product.getPrimaryKeyword();
     }
 }
