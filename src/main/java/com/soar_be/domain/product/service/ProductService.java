@@ -110,6 +110,7 @@ public class ProductService {
                 .registeredName(request.getRegisteredName())
                 .actualProductName(request.getActualProductName())
                 .primaryKeyword(request.getPrimaryKeyword())
+                .productUrl(request.getProductUrl())
                 .marketplace(request.getMarketplace())
                 .registeredDate(request.getRegisteredDate())
                 .status(ProductStatus.ACTIVE)
@@ -176,6 +177,7 @@ public class ProductService {
                 request.getRegisteredName(),
                 request.getActualProductName(),
                 request.getPrimaryKeyword(),
+                request.getProductUrl(),
                 request.getMarketplace(),
                 request.getRegisteredDate()
         );

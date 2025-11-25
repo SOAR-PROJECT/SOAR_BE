@@ -89,6 +89,7 @@ public class ExcelParsingService {
         String registeredName = getCellValue(row, ExcelColumn.REGISTERED_NAME.getIndex());
         String actualProductName = getCellValue(row, ExcelColumn.ACTUAL_PRODUCT_NAME.getIndex());
         String primaryKeyword = getCellValue(row, ExcelColumn.PRIMARY_KEYWORD.getIndex());
+        String productUrl = getCellValue(row, ExcelColumn.PRODUCT_URL.getIndex());
         String marketplace = getCellValue(row, ExcelColumn.MARKETPLACE.getIndex());
         String registeredDateStr = getCellValue(row, ExcelColumn.REGISTERED_DATE.getIndex());
 
@@ -96,6 +97,7 @@ public class ExcelParsingService {
         validateRequiredField(registeredName, ExcelColumn.REGISTERED_NAME, rowNum);
         validateRequiredField(actualProductName, ExcelColumn.ACTUAL_PRODUCT_NAME, rowNum);
         validateRequiredField(primaryKeyword, ExcelColumn.PRIMARY_KEYWORD, rowNum);
+        validateRequiredField(productUrl, ExcelColumn.PRODUCT_URL, rowNum);
         validateRequiredField(marketplace, ExcelColumn.MARKETPLACE, rowNum);
 
         LocalDate registeredDate = parseRegisteredDate(registeredDateStr);
@@ -106,6 +108,7 @@ public class ExcelParsingService {
                 .registeredName(registeredName.trim())
                 .actualProductName(actualProductName.trim())
                 .primaryKeyword(primaryKeyword.trim())
+                .productUrl(productUrl.trim())
                 .marketplace(marketplace.trim())
                 .registeredDate(registeredDate)
                 .status(ProductStatus.ACTIVE)

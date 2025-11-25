@@ -16,6 +16,8 @@ public class ProductUpdateRequest {
 
     private String primaryKeyword;
 
+    private String productUrl;
+
     private String marketplace;
 
     private LocalDate registeredDate;

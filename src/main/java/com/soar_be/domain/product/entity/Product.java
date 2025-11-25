@@ -55,6 +55,9 @@ public class Product {
     @Column(name = "primary_keyword", nullable = false, length = 200)
     private String primaryKeyword;
 
+    @Column(name = "product_url", length = 1000)
+    private String productUrl;
+
     @Column(nullable = false, length = 50)
     private String marketplace = "스마트스토어";
 
@@ -93,7 +96,7 @@ public class Product {
     }
 
     public void update(String registeredName, String actualProductName,
-                       String primaryKeyword, String marketplace, LocalDate registeredDate) {
+                       String primaryKeyword, String productUrl, String marketplace, LocalDate registeredDate) {
         if (registeredName != null) {
             this.registeredName = registeredName;
         }
@@ -102,6 +105,9 @@ public class Product {
         }
         if (primaryKeyword != null) {
             this.primaryKeyword = primaryKeyword;
+        }
+        if (productUrl != null) {
+            this.productUrl = productUrl;
         }
         if (marketplace != null) {
             this.marketplace = marketplace;

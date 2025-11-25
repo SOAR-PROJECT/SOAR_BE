@@ -5,8 +5,9 @@ public enum ExcelColumn {
     REGISTERED_NAME(1, "등록 상품명"),
     ACTUAL_PRODUCT_NAME(2, "상품명"),
     PRIMARY_KEYWORD(3, "키워드"),
-    MARKETPLACE(4, "판매처"),
-    REGISTERED_DATE(5, "등록일");
+    PRODUCT_URL(4, "상품URL"),
+    MARKETPLACE(5, "판매처"),
+    REGISTERED_DATE(6, "등록일");
 
     private final int index;
     private final String displayName;
