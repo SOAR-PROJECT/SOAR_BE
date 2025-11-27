@@ -1,143 +1,104 @@
 package com.soar_be.infra.naver;
 
-import com.soar_be.infra.naver.dto.NaverShoppingItem;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soar_be.infra.naver.dto.NaverShoppingResponse;
-import java.net.URI;
-import java.net.URLEncoder;
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import lombok.RequiredArgsConstructor;
+import java.util.zip.GZIPInputStream;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.RequestEntity;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class NaverShoppingClient {
 
-    private final NaverApiProperties naverApiProperties;
     private final RestTemplate restTemplate;
+    private final String clientId;
+    private final String clientSecret;
+    private final String apiUrl;
 
-    private static final int DISPLAY_SIZE = 100;
-    private static final int MAX_START = 1001;
-    private static final String SEARCH_PATH = "/v1/search/shop.json";
+    public NaverShoppingClient(
+            RestTemplate restTemplate,
+            @Value("${naver.api.client-id}") String clientId,
+            @Value("${naver.api.client-secret}") String clientSecret,
+            @Value("${naver.api.shopping-url}") String apiUrl) {
+        this.restTemplate = restTemplate;
+        this.clientId = clientId;
+        this.clientSecret = clientSecret;
+        this.apiUrl = apiUrl;
+    }
 
-    public Optional<NaverShoppingResponse> search(String keyword, int start) {
+    public NaverShoppingResponse search(String query, int display, int start) {
+        log.warn("🔍 Received query parameter: [{}], length: {}", query, query.length());
+
+        String url = UriComponentsBuilder.fromHttpUrl(apiUrl)
+                .queryParam("query", query)
+                .queryParam("display", display)
+                .queryParam("exclude", "used:rental:cbshop")
+                .queryParam("start", start)
+                .build()
+                .toUriString();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Naver-Client-Id", clientId);
+        headers.set("X-Naver-Client-Secret", clientSecret);
+        headers.set("User-Agent", "Mozilla/5.0");
+        headers.set("Accept-Encoding", "gzip");
+
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
         try {
-            String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
-            String url = String.format("%s%s?query=%s&display=%d&start=%d&sort=sim",
-                    naverApiProperties.getBaseUrl(),
-                    SEARCH_PATH,
-                    encodedKeyword,
-                    DISPLAY_SIZE,
-                    start);
-
-            RequestEntity<Void> request = RequestEntity
-                    .get(URI.create(url))
-                    .header("X-Naver-Client-Id", naverApiProperties.getClientId())
-                    .header("X-Naver-Client-Secret", naverApiProperties.getClientSecret())
-                    .build();
-
-            ResponseEntity<NaverShoppingResponse> response = restTemplate.exchange(
-                    request,
-                    NaverShoppingResponse.class
+            ResponseEntity<byte[]> rawResponse = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    byte[].class
             );
 
-            return Optional.ofNullable(response.getBody());
+            log.warn("🚨 Naver API Request URL: {}", url);
 
-        } catch (RestClientException e) {
-            log.error("네이버 쇼핑 API 호출 실패 - keyword: {}, start: {}, error: {}",
-                    keyword, start, e.getMessage());
-            return Optional.empty();
-        }
-    }
+            HttpHeaders respHeaders = rawResponse.getHeaders();
+            String contentEncoding = respHeaders.getFirst("Content-Encoding");
+            String contentType = respHeaders.getFirst("Content-Type");
+            byte[] bodyBytes = rawResponse.getBody();
 
-    public List<NaverShoppingItem> searchAll(String keyword) {
-        List<NaverShoppingItem> allItems = new ArrayList<>();
+            log.warn("📦 Response headers - Content-Type: {}, Content-Encoding: {}",
+                    contentType, contentEncoding);
+            log.warn("📦 Response body length: {}", bodyBytes != null ? bodyBytes.length : 0);
 
-        for (int start = 1; start <= MAX_START; start += DISPLAY_SIZE) {
-            Optional<NaverShoppingResponse> response = search(keyword, start);
-
-            if (response.isEmpty() || response.get().isEmpty()) {
-                log.debug("검색 결과 없음 - keyword: {}, start: {}", keyword, start);
-                break;
+            if (bodyBytes == null || bodyBytes.length == 0) {
+                log.error("Empty body from Naver API");
+                throw new RuntimeException("네이버 쇼핑 API 응답이 비어 있습니다.");
             }
 
-            NaverShoppingResponse data = response.get();
-            allItems.addAll(data.getItems());
-
-            if (data.getItemCount() < DISPLAY_SIZE) {
-                break;
+            String bodyString;
+            if (contentEncoding != null && contentEncoding.equalsIgnoreCase("gzip")) {
+                try (GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream(bodyBytes))) {
+                    byte[] uncompressed = gis.readAllBytes();
+                    bodyString = new String(uncompressed, StandardCharsets.UTF_8);
+                }
+            } else {
+                bodyString = new String(bodyBytes, StandardCharsets.UTF_8);
             }
 
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
+            String preview = bodyString.length() > 1000
+                    ? bodyString.substring(0, 1000) + "...(truncated)"
+                    : bodyString;
+            log.warn("🔎 Naver API RAW response text (start={}): {}", start, preview);
+
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(bodyString, NaverShoppingResponse.class);
+
+        } catch (Exception e) {
+            log.error("Naver Shopping API call failed - query: {}, start: {}", query, start, e);
+            throw new RuntimeException("네이버 쇼핑 API 호출에 실패했습니다.", e);
         }
-
-        log.info("네이버 쇼핑 검색 완료 - keyword: {}, 총 {}개 결과", keyword, allItems.size());
-        return allItems;
-    }
-
-    public Optional<Integer> findRankByProductUrl(String keyword, String productUrl) {
-        List<NaverShoppingItem> items = searchAll(keyword);
-
-        for (int i = 0; i < items.size(); i++) {
-            NaverShoppingItem item = items.get(i);
-            if (item.getLink() != null && item.getLink().contains(extractProductId(productUrl))) {
-                int rank = i + 1;
-                log.debug("상품 순위 발견 - keyword: {}, rank: {}", keyword, rank);
-                return Optional.of(rank);
-            }
-        }
-
-        log.debug("상품 미노출 - keyword: {}, productUrl: {}", keyword, productUrl);
-        return Optional.empty();
-    }
-
-    public Optional<Integer> findRankByMallAndProductId(String keyword, String mallName, String productId) {
-        List<NaverShoppingItem> items = searchAll(keyword);
-
-        for (int i = 0; i < items.size(); i++) {
-            NaverShoppingItem item = items.get(i);
-
-            boolean mallMatch = mallName != null && mallName.equals(item.getMallName());
-            boolean productMatch = productId != null &&
-                    item.getLink() != null &&
-                    item.getLink().contains(productId);
-
-            if (mallMatch && productMatch) {
-                int rank = i + 1;
-                log.debug("상품 순위 발견 - keyword: {}, mallName: {}, rank: {}", keyword, mallName, rank);
-                return Optional.of(rank);
-            }
-        }
-
-        log.debug("상품 미노출 - keyword: {}, mallName: {}, productId: {}", keyword, mallName, productId);
-        return Optional.empty();
-    }
-
-    private String extractProductId(String productUrl) {
-        if (productUrl == null || productUrl.isEmpty()) {
-            return "";
-        }
-
-        if (productUrl.contains("/products/")) {
-            String[] parts = productUrl.split("/products/");
-            if (parts.length > 1) {
-                return parts[1].split("\\?")[0];
-            }
-        }
-
-        return productUrl;
     }
 }
