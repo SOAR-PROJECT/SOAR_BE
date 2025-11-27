@@ -42,10 +42,11 @@ public class ProductListResponse {
         private String registeredName;
         private String actualProductName;
         private String primaryKeyword;
+        private String productUrl;
         private String marketplace;
         private LocalDate registeredDate;
         private ProductStatus status;
-        private LatestRank latestRank;  // null 가능 (순위 데이터 없을 수 있음)
+        private LatestRank latestRank;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
 
@@ -57,6 +58,7 @@ public class ProductListResponse {
                     .registeredName(product.getRegisteredName())
                     .actualProductName(product.getActualProductName())
                     .primaryKeyword(product.getPrimaryKeyword())
+                    .productUrl(product.getProductUrl())
                     .marketplace(product.getMarketplace())
                     .registeredDate(product.getRegisteredDate())
                     .status(product.getStatus())

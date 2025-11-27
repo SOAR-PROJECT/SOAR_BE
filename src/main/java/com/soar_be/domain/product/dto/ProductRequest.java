@@ -27,6 +27,9 @@ public class ProductRequest {
     @NotBlank(message = "키워드는 필수입니다.")
     private String primaryKeyword;
 
+    @NotBlank(message = "상품Url는 필수입니다.")
+    private String productUrl;
+
     @NotBlank(message = "판매처는 필수입니다.")
     private String marketplace;
 

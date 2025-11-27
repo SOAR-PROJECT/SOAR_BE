@@ -19,6 +19,7 @@ public class ProductDetailResponse {
     private String registeredName;
     private String actualProductName;
     private String primaryKeyword;
+    private String productUrl;
     private String marketplace;
     private LocalDate registeredDate;
     private ProductStatus status;
@@ -34,6 +35,7 @@ public class ProductDetailResponse {
                 .registeredName(product.getRegisteredName())
                 .actualProductName(product.getActualProductName())
                 .primaryKeyword(product.getPrimaryKeyword())
+                .productUrl(product.getProductUrl())
                 .marketplace(product.getMarketplace())
                 .registeredDate(product.getRegisteredDate())
                 .status(product.getStatus())
